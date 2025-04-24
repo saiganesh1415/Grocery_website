@@ -2,105 +2,45 @@ pipeline {
     agent any
 
     environment {
-        // Define environment variables
         REPO_URL = 'https://github.com/saiganesh1415/grocery_website.git'
-        BRANCH = 'main'
-        DOCKER_IMAGE = 'grocery-website'
-        DOCKER_REGISTRY = 'your-docker-registry' // Replace with your registry
-        DEPLOY_ENV = 'production'
+        DEPLOY_DIR = '/var/www/html'  // Change this to your web server directory
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // Checkout code from GitHub
-                git branch: "${env.BRANCH}", url: "${env.REPO_URL}"
+                git branch: 'main', url: "${env.REPO_URL}"
                 echo 'Code checkout completed'
             }
         }
 
-        stage('Install Dependencies') {
-            steps {
-                // Since this is a static HTML site, we might not need build tools
-                // But you can add any necessary steps here
-                echo 'No dependencies to install for static HTML site'
-            }
-        }
-
-        stage('Linting') {
-            steps {
-                // HTML validation (optional)
-                script {
-                    try {
-                        sh 'npm install -g html-validator' // If you want HTML validation
-                        sh 'html-validator --file index.html'
-                    } catch (e) {
-                        echo 'HTML validation failed, continuing...'
-                        // You might want to make this non-fatal for simple projects
-                    }
-                }
-            }
-        }
-
-        stage('Build Docker Image') {
+        stage('Verify Structure') {
             steps {
                 script {
-                    // Create a simple Dockerfile if it doesn't exist
-                    if (!fileExists('Dockerfile')) {
-                        writeFile file: 'Dockerfile', text: '''
-                        FROM nginx:alpine
-                        COPY . /usr/share/nginx/html
-                        EXPOSE 80
-                        '''
+                    // Verify essential files exist
+                    if (!fileExists('index.html')) {
+                        error('index.html not found!')
                     }
-                    
-                    // Build Docker image
-                    docker.build("${env.DOCKER_IMAGE}:${env.BUILD_NUMBER}")
-                }
-            }
-        }
-
-        stage('Test') {
-            steps {
-                // Simple test to verify the HTML loads
-                script {
-                    // You could add more sophisticated tests here
-                    def htmlContent = readFile('index.html')
-                    if (!htmlContent.contains('groco')) {
-                        error('Basic content check failed!')
+                    if (!fileExists('css/style.css')) {
+                        error('CSS file not found!')
                     }
-                    echo 'Basic content validation passed'
-                }
-            }
-        }
-
-        stage('Push to Registry') {
-            when {
-                expression { env.DEPLOY_ENV == 'production' }
-            }
-            steps {
-                script {
-                    // Login to Docker registry (configure credentials in Jenkins)
-                    docker.withRegistry('https://' + env.DOCKER_REGISTRY, 'docker-hub-credentials') {
-                        docker.image("${env.DOCKER_IMAGE}:${env.BUILD_NUMBER}").push()
-                    }
+                    echo 'Basic structure verification passed'
                 }
             }
         }
 
         stage('Deploy') {
-            when {
-                expression { env.DEPLOY_ENV == 'production' }
-            }
             steps {
                 script {
-                    // Simple deployment - in a real scenario you'd use Kubernetes, ECS, etc.
-                    // This is just an example - adjust for your infrastructure
-                    sh "docker run -d -p 8080:80 --name grocery-website ${env.DOCKER_IMAGE}:${env.BUILD_NUMBER}"
-                    echo 'Deployed to test environment'
-                    
-                    // For production, you might do a blue-green deployment
-                    // or update a Kubernetes deployment, etc.
+                    // Simple deployment using rsync (requires SSH access to server)
+                    // Make sure Jenkins has SSH keys configured for the target server
+                    sh """
+                        rsync -avz --delete \
+                        --exclude='.git' \
+                        --exclude='Jenkinsfile' \
+                        . ${env.DEPLOY_DIR}/
+                    """
+                    echo 'Website deployed successfully'
                 }
             }
         }
@@ -108,22 +48,15 @@ pipeline {
 
     post {
         always {
-            // Clean up workspace
-            echo 'Cleaning up workspace...'
             cleanWs()
         }
         success {
             echo 'Pipeline completed successfully!'
-            // Optional: Send success notification
+            // Add notification here (email, Slack, etc.)
         }
         failure {
             echo 'Pipeline failed!'
-            // Optional: Send failure notification
+            // Add failure notification here
         }
     }
 }
-
-
-
-
-
