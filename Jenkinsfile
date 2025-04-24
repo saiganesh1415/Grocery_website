@@ -3,7 +3,7 @@ node {
     def CONTAINER = 'grocery_site'
 
     stage('Clone Repository') {
-        git 'https://github.com/saiganesh1415/grocery_website'
+        git branch: 'main', url: 'https://github.com/saiganesh1415/grocery_website'
     }
 
     stage('Build Docker Image') {
