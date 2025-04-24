@@ -1,15 +1,10 @@
 pipeline {
-    agent {
-        docker {
-            image 'docker:24.0.2-dind'
-            args '-v /var/run/docker.sock:/var/run/docker.sock'
-        }
-    }
+    agent any
 
     stages {
         stage('Checkout Code') {
             steps {
-                checkout scm
+                git 'https://github.com/saiganesh1415/grocery_website.git'
             }
         }
 
@@ -26,4 +21,5 @@ pipeline {
         }
     }
 }
+
 
