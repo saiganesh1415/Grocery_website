@@ -1,18 +1,20 @@
 pipeline {
     agent any
 
+    environment {
+        IMAGE_NAME = 'grocery_website'
+    }
+
     stages {
-        stage('Clone Repository') {
+        stage('Checkout Code') {
             steps {
-                git 'https://github.com/yourusername/Grocerywebsite.github.io.git'
+                checkout scm
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    docker.build('grocery_website')
-                }
+                sh 'docker build -t grocery_website .'
             }
         }
 
