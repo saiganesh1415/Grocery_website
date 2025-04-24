@@ -1,8 +1,9 @@
 pipeline {
-    agent any
-
-    environment {
-        IMAGE_NAME = 'grocery_website'
+    agent {
+        docker {
+            image 'docker:24.0.2-dind'
+            args '-v /var/run/docker.sock:/var/run/docker.sock'
+        }
     }
 
     stages {
@@ -25,3 +26,4 @@ pipeline {
         }
     }
 }
+
