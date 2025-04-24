@@ -1,27 +1,27 @@
-stage('Build Docker Image') {
-  steps {
-    sh 'docker build -t saiganesh1415/grocery_website .'
-  }
+node {
+    def IMAGE = 'saiganesh1415/grocery_website'
+    def CONTAINER = 'grocery_site'
+
+    stage('Clone Repository') {
+        git 'https://github.com/saiganesh1415/grocery_website'
+    }
+
+    stage('Build Docker Image') {
+        sh "docker build -t ${IMAGE} ."
+    }
+
+    stage('Push to Docker Hub') {
+        withDockerRegistry(credentialsId: 'saiganesh1415', url: '') {
+            sh "docker push ${IMAGE}"
+        }
+    }
+
+    stage('Deploy Container') {
+        sh "docker rm -f ${CONTAINER} || true"
+        sh "docker run -d --name ${CONTAINER} -p 8081:80 ${IMAGE}"
+    }
 }
 
-stage('Push Image to Docker Hub') {
-  steps {
-    script {
-      withDockerRegistry(credentialsId: 'saiganesh1415', url: '') {
-        sh 'docker push saiganesh1415/grocery_website'
-      }
-    }
-  }
-}
-
-stage('Deploy Container') {
-  steps {
-    script {
-      sh 'docker rm -f grocery_site || true'
-      sh 'docker run -d --name grocery_site -p 8081:80 saiganesh1415/grocery_website'
-    }
-  }
-}
 
 
 
