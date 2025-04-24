@@ -1,16 +1,14 @@
 stage('Build Docker Image') {
   steps {
-    script {
-      dockerImage = docker.build("${DOCKER_IMAGE}")
-    }
+    sh 'docker build -t saiganesh1415/grocery_website .'
   }
 }
 
-stage('Push to Docker Hub') {
+stage('Push Image to Docker Hub') {
   steps {
     script {
-      docker.withRegistry('https://index.docker.io/v1/', "${DOCKER_CREDENTIALS_ID}") {
-        dockerImage.push("latest")
+      withDockerRegistry(credentialsId: 'saiganesh1415', url: '') {
+        sh 'docker push saiganesh1415/grocery_website'
       }
     }
   }
@@ -19,14 +17,12 @@ stage('Push to Docker Hub') {
 stage('Deploy Container') {
   steps {
     script {
-      // Remove old container if exists and start new one
-      sh '''
-        docker rm -f grocery_site || true
-        docker run -d -p 8080:80 --name grocery_site ${DOCKER_IMAGE}:latest
-      '''
+      sh 'docker rm -f grocery_site || true'
+      sh 'docker run -d --name grocery_site -p 8081:80 saiganesh1415/grocery_website'
     }
   }
 }
+
 
 
 
